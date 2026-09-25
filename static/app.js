@@ -47,6 +47,7 @@ document.getElementById('loadSummaryBtn').addEventListener('click', async () => 
 
 document.getElementById('logForm').addEventListener('submit', async (e) => {
   e.preventDefault();
+  const status = document.getElementById('formStatus');
   const body = {
     employee_name: document.getElementById('employeeInput').value.trim(),
     project: document.getElementById('projectInput').value.trim(),
@@ -54,14 +55,27 @@ document.getElementById('logForm').addEventListener('submit', async (e) => {
     hours: parseFloat(document.getElementById('hoursInput').value),
     description: document.getElementById('descInput').value.trim(),
   };
-  await fetch('/api/entries', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  document.getElementById('logForm').reset();
-  loadEntries();
-  loadProjectOptions();
+  status.textContent = 'Saving...';
+  status.style.color = '';
+  try {
+    const res = await fetch('/api/entries', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({}));
+      throw new Error(error.detail || `Request failed (${res.status})`);
+    }
+    document.getElementById('logForm').reset();
+    status.textContent = 'Time logged.';
+    status.style.color = '#166534';
+    await loadEntries();
+    await loadProjectOptions();
+  } catch (error) {
+    status.textContent = `Could not log time: ${error.message}`;
+    status.style.color = '#b91c1c';
+  }
 });
 
 function escapeHtml(str) {
